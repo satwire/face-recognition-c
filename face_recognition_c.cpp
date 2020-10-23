@@ -26,13 +26,32 @@ int main()
         return -1;
     }
 
-    int imageHeigt = image.rows;
+    int imageHeight = image.rows;
     int imageWidth = image.cols;
 
     Mat imageResized;
     resize(image, imageResized, Size(300, 300));
 
     Mat blob = blobFromImage(imageResized, 1.0, Size(300, 300), Scalar(104.0, 177.0, 123.0), true);
+
+    net.setInput(blob, "data");
+    Mat detections = net.forward("detection_out");
+
+    Mat detectionMat(detections.size[2], detections.size[3], CV_32F, detections.ptr<float>());
+
+    for (int i = 0; i < detectionMat.rows; i++)
+    {
+        float confidence = detectionMat.at<float>(i, 2);
+        if (confidence > 0.5)
+        {
+            int x1 = static_cast<int>(detectionMat.at<float>(i, 3) * imageWidth);
+            int y1 = static_cast<int>(detectionMat.at<float>(i, 4) * imageHeight);
+            int x2 = static_cast<int>(detectionMat.at<float>(i, 5) * imageWidth);
+            int y2 = static_cast<int>(detectionMat.at<float>(i, 6) * imageHeight);
+
+            rectangle(image, Point(x1, y1), Point(x2, y2), Scalar(0, 255, 0), 2, 4);
+        }
+    }
 
     namedWindow("Display window", WINDOW_AUTOSIZE); // Create a window for display.
     imshow("Display window", image); // Show our image inside it.
